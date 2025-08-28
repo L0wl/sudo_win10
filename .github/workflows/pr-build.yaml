@@ -44,7 +44,9 @@ jobs:
       - name: Run fmt
         run: cargo fmt --all -- --check
 
-      # Test will build the code, then also test it.
+      - name: Run build
+        run: cargo build --target ${{ matrix.target }}
+
       - name: Test
         run:  cargo test --no-default-features --features ${{matrix.branding}}  --target ${{ matrix.target }}
 
