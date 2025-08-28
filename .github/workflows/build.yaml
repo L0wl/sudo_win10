@@ -1,0 +1,55 @@
+name: Manual Build 
+on:
+    workflow_dispatch:
+        inputs:
+            target:
+              description: 'Build Target'
+              required: true
+              type: choice
+              options:
+              - x86_64-pc-windows-msvc
+              - i686-pc-windows-msvc
+              default: 'x86_64-pc-windows-msvc'
+            branding:
+              description: 'Branding Type'
+              required: true
+              type: choice
+              options:
+              - Inbox
+              - Stable
+              - Dev
+              default: 'Stable'
+jobs:
+    build:
+        runs-on: windows-2022
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            
+            - name: Update toolchain
+              run: rustup update --no-self-update stable && rustup default stable-${{ inputs.target }}
+
+            - name: Add toolchain target
+              run: rustup target add ${{ inputs.target }}
+
+            - name: Fix environment
+              uses: ./.github/actions/fix-environment
+
+            - name: Clean
+              run:  cargo clean
+
+            - name: Build
+              run: cargo build --target ${{ inputs.target }} --no-default-features --features ${{ inputs.branding }}
+
+            - name: Prepare Artifacts
+              run: |
+                mkdir artifacts
+                copy target\${{ inputs.target }}\debug\*.exe artifacts\ || true
+                copy target\${{ inputs.target }}\debug\*.dll artifacts\ || true
+            
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                name: ${{ inputs.target }}-${{ inputs.branding }}-build
+                path: artifacts\
+                retention-days: 5
